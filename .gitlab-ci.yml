@@ -33,6 +33,12 @@ bandit:
   script:
     - bandit -r federal_pki -c pyproject.toml
 
+pip-audit:
+  stage: lint
+  script:
+    - pip install pip-audit
+    - pip-audit .
+
 pytest:
   stage: test
   script:
