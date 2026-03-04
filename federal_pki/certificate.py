@@ -1,6 +1,6 @@
 """X.509 certificate parsing utilities for DoD and Federal PKI certificates."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from hashlib import sha256
 
 from cryptography import x509
@@ -21,22 +21,20 @@ def load_certificate(data: bytes) -> x509.Certificate:
     try:
         return x509.load_der_x509_certificate(data)
     except Exception as e:
-        raise CertificateError(f"Failed to parse certificate: {e}")
+        raise CertificateError(f"Failed to parse certificate: {e}") from e
 
 
 def get_name_attr(name: x509.Name, oid: x509.ObjectIdentifier) -> str | None:
     """Get first attribute value for an OID from an x509 Name."""
     attrs = name.get_attributes_for_oid(oid)
-    return attrs[0].value if attrs else None
+    return str(attrs[0].value) if attrs else None
 
 
 def get_policy_oids(cert: x509.Certificate) -> list[str]:
     """Extract certificate policy OIDs."""
     try:
-        ext = cert.extensions.get_extension_for_oid(
-            ExtensionOID.CERTIFICATE_POLICIES
-        )
-        return [p.policy_identifier.dotted_string for p in ext.value]
+        ext = cert.extensions.get_extension_for_oid(ExtensionOID.CERTIFICATE_POLICIES)
+        return [p.policy_identifier.dotted_string for p in ext.value]  # type: ignore[attr-defined]
     except x509.ExtensionNotFound:
         return []
 
@@ -44,10 +42,8 @@ def get_policy_oids(cert: x509.Certificate) -> list[str]:
 def extract_email(cert: x509.Certificate) -> str | None:
     """Extract email from SAN (rfc822Name) or subject."""
     try:
-        san = cert.extensions.get_extension_for_oid(
-            ExtensionOID.SUBJECT_ALTERNATIVE_NAME
-        )
-        emails = san.value.get_values_for_type(x509.RFC822Name)
+        san = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+        emails = san.value.get_values_for_type(x509.RFC822Name)  # type: ignore[attr-defined]
         if emails:
             return emails[0]
     except x509.ExtensionNotFound:
@@ -59,10 +55,8 @@ def extract_email(cert: x509.Certificate) -> str | None:
 def extract_san_uris(cert: x509.Certificate) -> list[str]:
     """Extract URI values from Subject Alternative Name."""
     try:
-        san = cert.extensions.get_extension_for_oid(
-            ExtensionOID.SUBJECT_ALTERNATIVE_NAME
-        )
-        return list(san.value.get_values_for_type(x509.UniformResourceIdentifier))
+        san = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+        return list(san.value.get_values_for_type(x509.UniformResourceIdentifier))  # type: ignore[attr-defined]
     except x509.ExtensionNotFound:
         return []
 
@@ -78,13 +72,13 @@ def extract_san_uuid(cert: x509.Certificate) -> str | None:
 def extract_san_fascn(cert: x509.Certificate) -> str | None:
     """Extract FASC-N from SAN OtherName (OID 2.16.840.1.101.3.6.6)."""
     try:
-        san = cert.extensions.get_extension_for_oid(
-            ExtensionOID.SUBJECT_ALTERNATIVE_NAME
-        )
-        for general_name in san.value:
-            if isinstance(general_name, x509.OtherName):
-                if general_name.type_id.dotted_string == "2.16.840.1.101.3.6.6":
-                    return general_name.value.hex()
+        san = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+        for general_name in san.value:  # type: ignore[attr-defined]
+            if (
+                isinstance(general_name, x509.OtherName)
+                and general_name.type_id.dotted_string == "2.16.840.1.101.3.6.6"
+            ):
+                return general_name.value.hex()
     except (x509.ExtensionNotFound, Exception):
         pass
     return None
@@ -102,4 +96,4 @@ def cert_to_pem(cert: x509.Certificate) -> str:
 
 def is_expired(cert: x509.Certificate) -> bool:
     """Return True if the certificate has expired."""
-    return cert.not_valid_after_utc < datetime.now(timezone.utc)
+    return cert.not_valid_after_utc < datetime.now(UTC)

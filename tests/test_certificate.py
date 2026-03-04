@@ -1,5 +1,6 @@
 """Tests for federal_pki.certificate module."""
 
+import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.x509.oid import NameOID
 
@@ -28,11 +29,8 @@ class TestLoadCertificate:
         assert cert.serial_number == cac_cert.serial_number
 
     def test_load_garbage_raises(self):
-        try:
+        with pytest.raises(CertificateError):
             load_certificate(b"not a certificate")
-            assert False, "Should have raised"
-        except CertificateError:
-            pass
 
 
 class TestGetNameAttr:

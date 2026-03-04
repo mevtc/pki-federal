@@ -2,8 +2,8 @@
 
 # DoD authentication certificate policy OIDs (CAC)
 DOD_AUTH_OIDS: set[str] = {
-    "2.16.840.1.101.2.1.11.5",   # id-fpki-certpcy-dodMediumHardware
-    "2.16.840.1.101.2.1.11.9",   # id-fpki-certpcy-dodMedium
+    "2.16.840.1.101.2.1.11.5",  # id-fpki-certpcy-dodMediumHardware
+    "2.16.840.1.101.2.1.11.9",  # id-fpki-certpcy-dodMedium
     "2.16.840.1.101.2.1.11.19",  # id-fpki-certpcy-dodPIVAuth
     "2.16.840.1.101.2.1.11.42",  # id-fpki-certpcy-dodPIVAuth2
 }

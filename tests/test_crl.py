@@ -1,7 +1,6 @@
 """Tests for federal_pki.crl module."""
 
-import time
-from pathlib import Path
+import pytest
 
 from federal_pki.certificate import CertificateError
 from federal_pki.crl import (
@@ -32,11 +31,8 @@ class TestParseCrlBytes:
         assert crl is not None
 
     def test_parse_garbage_raises(self):
-        try:
+        with pytest.raises(CertificateError):
             parse_crl_bytes(b"not a crl")
-            assert False, "Should have raised"
-        except CertificateError:
-            pass
 
 
 class TestCrlRevocation:

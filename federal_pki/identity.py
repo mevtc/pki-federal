@@ -86,9 +86,7 @@ def parse_identity(cert: x509.Certificate) -> CertIdentity:
     elif policy_set & FPKI_PIV_AUTH_OIDS:
         identity.credential_type = "PIV"
     else:
-        identity.credential_type = guess_credential_type(
-            identity.cn, identity.organization
-        )
+        identity.credential_type = guess_credential_type(identity.cn, identity.organization)
 
     # Extract identifiers based on type
     if identity.credential_type == "CAC":

@@ -6,7 +6,7 @@ import pytest
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.x509.oid import ExtensionOID, NameOID
+from cryptography.x509.oid import NameOID
 
 
 def _generate_key():
@@ -21,19 +21,21 @@ def ca_key():
 @pytest.fixture(scope="session")
 def ca_cert(ca_key):
     """Self-signed CA certificate."""
-    subject = issuer = x509.Name([
-        x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-        x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test DoD CA"),
-        x509.NameAttribute(NameOID.COMMON_NAME, "Test DoD Root CA 1"),
-    ])
+    subject = issuer = x509.Name(
+        [
+            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test DoD CA"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "Test DoD Root CA 1"),
+        ]
+    )
     return (
         x509.CertificateBuilder()
         .subject_name(subject)
         .issuer_name(issuer)
         .public_key(ca_key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc))
-        .not_valid_after(datetime.datetime(2030, 1, 1, tzinfo=datetime.timezone.utc))
+        .not_valid_before(datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC))
+        .not_valid_after(datetime.datetime(2030, 1, 1, tzinfo=datetime.UTC))
         .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
         .sign(ca_key, hashes.SHA256())
     )
@@ -52,16 +54,16 @@ def signer_key():
 @pytest.fixture(scope="session")
 def cac_cert(ca_key, ca_cert, signer_key):
     """End-entity certificate mimicking a DoD CAC (EDIPI in CN)."""
-    subject = x509.Name([
-        x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-        x509.NameAttribute(NameOID.ORGANIZATION_NAME, "U.S. Government"),
-        x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, "DoD"),
-        x509.NameAttribute(NameOID.COMMON_NAME, "SMITH.JOHN.A.1234567890"),
-    ])
-    # DoD PIV Auth policy OID
-    dod_policy = x509.PolicyInformation(
-        x509.ObjectIdentifier("2.16.840.1.101.2.1.11.19"), None
+    subject = x509.Name(
+        [
+            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "U.S. Government"),
+            x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, "DoD"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "SMITH.JOHN.A.1234567890"),
+        ]
     )
+    # DoD PIV Auth policy OID
+    dod_policy = x509.PolicyInformation(x509.ObjectIdentifier("2.16.840.1.101.2.1.11.19"), None)
     # CRL distribution point
     crl_dp = x509.DistributionPoint(
         full_name=[x509.UniformResourceIdentifier("http://crl.test.example/test.crl")],
@@ -75,18 +77,16 @@ def cac_cert(ca_key, ca_cert, signer_key):
         .issuer_name(ca_cert.subject)
         .public_key(signer_key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc))
-        .not_valid_after(datetime.datetime(2030, 1, 1, tzinfo=datetime.timezone.utc))
+        .not_valid_before(datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC))
+        .not_valid_after(datetime.datetime(2030, 1, 1, tzinfo=datetime.UTC))
+        .add_extension(x509.CertificatePolicies([dod_policy]), critical=False)
+        .add_extension(x509.CRLDistributionPoints([crl_dp]), critical=False)
         .add_extension(
-            x509.CertificatePolicies([dod_policy]), critical=False
-        )
-        .add_extension(
-            x509.CRLDistributionPoints([crl_dp]), critical=False
-        )
-        .add_extension(
-            x509.SubjectAlternativeName([
-                x509.RFC822Name("john.smith@mail.mil"),
-            ]),
+            x509.SubjectAlternativeName(
+                [
+                    x509.RFC822Name("john.smith@mail.mil"),
+                ]
+            ),
             critical=False,
         )
         .sign(ca_key, hashes.SHA256())
@@ -96,32 +96,30 @@ def cac_cert(ca_key, ca_cert, signer_key):
 @pytest.fixture(scope="session")
 def piv_cert(ca_key, ca_cert, signer_key):
     """End-entity certificate mimicking a Federal PIV card."""
-    subject = x509.Name([
-        x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-        x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Department of Energy"),
-        x509.NameAttribute(NameOID.COMMON_NAME, "JONES, ALICE M"),
-    ])
-    fpki_policy = x509.PolicyInformation(
-        x509.ObjectIdentifier("2.16.840.1.101.3.2.1.3.13"), None
+    subject = x509.Name(
+        [
+            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Department of Energy"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "JONES, ALICE M"),
+        ]
     )
+    fpki_policy = x509.PolicyInformation(x509.ObjectIdentifier("2.16.840.1.101.3.2.1.3.13"), None)
     return (
         x509.CertificateBuilder()
         .subject_name(subject)
         .issuer_name(ca_cert.subject)
         .public_key(signer_key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc))
-        .not_valid_after(datetime.datetime(2030, 1, 1, tzinfo=datetime.timezone.utc))
+        .not_valid_before(datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC))
+        .not_valid_after(datetime.datetime(2030, 1, 1, tzinfo=datetime.UTC))
+        .add_extension(x509.CertificatePolicies([fpki_policy]), critical=False)
         .add_extension(
-            x509.CertificatePolicies([fpki_policy]), critical=False
-        )
-        .add_extension(
-            x509.SubjectAlternativeName([
-                x509.RFC822Name("alice.jones@doe.gov"),
-                x509.UniformResourceIdentifier(
-                    "urn:uuid:12345678-abcd-ef01-2345-6789abcdef01"
-                ),
-            ]),
+            x509.SubjectAlternativeName(
+                [
+                    x509.RFC822Name("alice.jones@doe.gov"),
+                    x509.UniformResourceIdentifier("urn:uuid:12345678-abcd-ef01-2345-6789abcdef01"),
+                ]
+            ),
             critical=False,
         )
         .sign(ca_key, hashes.SHA256())
@@ -131,17 +129,19 @@ def piv_cert(ca_key, ca_cert, signer_key):
 @pytest.fixture(scope="session")
 def expired_cert(ca_key, ca_cert, signer_key):
     """An expired certificate."""
-    subject = x509.Name([
-        x509.NameAttribute(NameOID.COMMON_NAME, "EXPIRED.USER.X.9999999999"),
-    ])
+    subject = x509.Name(
+        [
+            x509.NameAttribute(NameOID.COMMON_NAME, "EXPIRED.USER.X.9999999999"),
+        ]
+    )
     return (
         x509.CertificateBuilder()
         .subject_name(subject)
         .issuer_name(ca_cert.subject)
         .public_key(signer_key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.datetime(2020, 1, 1, tzinfo=datetime.timezone.utc))
-        .not_valid_after(datetime.datetime(2021, 1, 1, tzinfo=datetime.timezone.utc))
+        .not_valid_before(datetime.datetime(2020, 1, 1, tzinfo=datetime.UTC))
+        .not_valid_after(datetime.datetime(2021, 1, 1, tzinfo=datetime.UTC))
         .sign(ca_key, hashes.SHA256())
     )
 
@@ -157,16 +157,12 @@ def test_crl(ca_key, ca_cert, revoked_serial):
     """A CRL revoking the cac_cert."""
     builder = x509.CertificateRevocationListBuilder()
     builder = builder.issuer_name(ca_cert.subject)
-    builder = builder.last_update(
-        datetime.datetime(2024, 6, 1, tzinfo=datetime.timezone.utc)
-    )
-    builder = builder.next_update(
-        datetime.datetime(2030, 6, 1, tzinfo=datetime.timezone.utc)
-    )
+    builder = builder.last_update(datetime.datetime(2024, 6, 1, tzinfo=datetime.UTC))
+    builder = builder.next_update(datetime.datetime(2030, 6, 1, tzinfo=datetime.UTC))
     revoked = (
         x509.RevokedCertificateBuilder()
         .serial_number(revoked_serial)
-        .revocation_date(datetime.datetime(2024, 5, 1, tzinfo=datetime.timezone.utc))
+        .revocation_date(datetime.datetime(2024, 5, 1, tzinfo=datetime.UTC))
         .build()
     )
     builder = builder.add_revoked_certificate(revoked)

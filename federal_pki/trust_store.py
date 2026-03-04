@@ -40,6 +40,7 @@ USER_AGENT = "federal-pki/0.1"
 # Download helper
 # ---------------------------------------------------------------------------
 
+
 def _download(url: str, timeout: int = 60) -> bytes:
     """Download a URL and return raw bytes."""
     logger.info("Downloading %s", url)
@@ -57,6 +58,7 @@ def _download(url: str, timeout: int = 60) -> bytes:
 # ---------------------------------------------------------------------------
 # Source fetchers
 # ---------------------------------------------------------------------------
+
 
 def fetch_dod_certs(url: str | None = None) -> list:
     """Download and parse DoD CA certificates from DISA PKCS7 ZIP.
@@ -83,9 +85,7 @@ def fetch_dod_certs(url: str | None = None) -> list:
             except Exception:
                 try:
                     parsed = load_der_pkcs7_certificates(p7_data)
-                    logger.info(
-                        "Parsed %d certs from %s (DER PKCS7)", len(parsed), name
-                    )
+                    logger.info("Parsed %d certs from %s (DER PKCS7)", len(parsed), name)
                     certs.extend(parsed)
                 except Exception as e:
                     logger.warning("Could not parse %s: %s", name, e)
@@ -122,6 +122,7 @@ def fetch_fpki_certs() -> list:
 # ---------------------------------------------------------------------------
 # Merge and deduplicate
 # ---------------------------------------------------------------------------
+
 
 def merge_and_deduplicate(
     cert_lists: list[tuple[str, list]],
@@ -185,6 +186,7 @@ def build_ca_bundle(
 
     if output_path:
         from pathlib import Path
+
         path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(pem_bundle)

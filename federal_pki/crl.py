@@ -71,8 +71,7 @@ def check_revocation(cert: x509.Certificate, config: CRLConfig) -> None:
     urls = get_crl_distribution_points(cert)
     if not urls:
         logger.warning(
-            "Certificate serial=%s has no CRL distribution points; "
-            "skipping revocation check",
+            "Certificate serial=%s has no CRL distribution points; skipping revocation check",
             format(cert.serial_number, "x"),
         )
         return
@@ -85,12 +84,8 @@ def check_revocation(cert: x509.Certificate, config: CRLConfig) -> None:
         except Exception as e:
             logger.error("CRL unavailable for %s: %s", url, e)
             if config.strict:
-                raise CertificateError(
-                    "Could not verify revocation status; CRL unavailable"
-                )
-            logger.warning(
-                "strict=false -- allowing without revocation check for %s", url
-            )
+                raise CertificateError("Could not verify revocation status; CRL unavailable") from e
+            logger.warning("strict=false -- allowing without revocation check for %s", url)
             continue
 
         if crl.get_revoked_certificate_by_serial_number(cert.serial_number) is not None:
@@ -120,7 +115,8 @@ def get_crl(url: str, config: CRLConfig) -> x509.CertificateRevocationList:
         else:
             logger.debug(
                 "CRL stale (%.0fs old) for %s -- serving cache, refreshing in background",
-                age, url,
+                age,
+                url,
             )
             threading.Thread(
                 target=refresh_crl,
@@ -133,9 +129,7 @@ def get_crl(url: str, config: CRLConfig) -> x509.CertificateRevocationList:
     return refresh_crl(url, cache_file, config.fetch_timeout)
 
 
-def refresh_crl(
-    url: str, cache_file: Path, timeout: int = 10
-) -> x509.CertificateRevocationList:
+def refresh_crl(url: str, cache_file: Path, timeout: int = 10) -> x509.CertificateRevocationList:
     """Fetch a CRL from url, write it to cache_file, and return parsed CRL.
 
     Called directly (blocking) when no cache exists, or from a daemon thread
@@ -167,7 +161,7 @@ def parse_crl_bytes(data: bytes) -> x509.CertificateRevocationList:
     try:
         return x509.load_pem_x509_crl(data)
     except Exception as e:
-        raise CertificateError(f"Failed to parse CRL: {e}")
+        raise CertificateError(f"Failed to parse CRL: {e}") from e
 
 
 def prefetch_crls(cert: x509.Certificate, config: CRLConfig) -> dict[str, str]:
