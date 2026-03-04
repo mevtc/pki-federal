@@ -4,22 +4,34 @@ import hashlib
 import logging
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import httpx
 from cryptography import x509
+from platformdirs import user_cache_dir
 
 from .certificate import CertificateError
 
 logger = logging.getLogger(__name__)
 
 
+def _default_cache_dir() -> str:
+    """Return the platform-standard cache directory for federal-pki CRLs."""
+    return str(Path(user_cache_dir("federal-pki")) / "crls")
+
+
 @dataclass
 class CRLConfig:
-    """Configuration for CRL cache behaviour."""
+    """Configuration for CRL cache behaviour.
 
-    cache_dir: str = "/var/cache/federal-pki/crls"
+    ``cache_dir`` defaults to the platform-standard user cache location
+    (e.g. ``~/.cache/federal-pki/crls`` on Linux,
+    ``~/Library/Caches/federal-pki/crls`` on macOS).  Pass an explicit
+    value to override.
+    """
+
+    cache_dir: str = field(default_factory=_default_cache_dir)
     cache_ttl: int = 3600  # seconds
     strict: bool = True
     fetch_timeout: int = 10  # seconds
