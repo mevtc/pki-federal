@@ -5,6 +5,7 @@ import logging
 import threading
 import time
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -56,7 +57,74 @@ def get_crl_distribution_points(cert: x509.Certificate) -> list[str]:
     return urls
 
 
-def check_revocation(cert: x509.Certificate, config: CRLConfig) -> None:
+def verify_crl(
+    crl: x509.CertificateRevocationList,
+    issuer_certs: list[x509.Certificate],
+    strict: bool = True,
+) -> bool:
+    """Verify a CRL's signature and freshness against a set of CA certificates.
+
+    Checks that:
+    1. A CA certificate whose subject matches the CRL issuer is present.
+    2. The CRL signature is valid for that CA's public key.
+    3. The CRL's ``nextUpdate`` has not passed (stale CRL protection).
+
+    Returns True if the CRL is valid.  In strict mode, raises
+    ``CertificateError`` on any failure.  In non-strict mode, logs a warning
+    and returns False.
+    """
+    crl_issuer = crl.issuer.rfc4514_string()
+
+    # Find matching issuer cert by subject DN.
+    issuer_cert = None
+    for ca in issuer_certs:
+        if ca.subject.rfc4514_string() == crl_issuer:
+            issuer_cert = ca
+            break
+
+    if issuer_cert is None:
+        msg = f"No CA certificate found for CRL issuer: {crl_issuer}"
+        if strict:
+            raise CertificateError(msg)
+        logger.warning(msg)
+        return False
+
+    # Verify signature.
+    if not crl.is_signature_valid(issuer_cert.public_key()):  # type: ignore[arg-type]
+        msg = f"CRL signature verification failed for issuer: {crl_issuer}"
+        if strict:
+            raise CertificateError(msg)
+        logger.warning(msg)
+        return False
+
+    # Verify nextUpdate hasn't passed.
+    if crl.next_update_utc and crl.next_update_utc < datetime.now(UTC):
+        msg = f"CRL has expired (nextUpdate={crl.next_update_utc.isoformat()})"
+        if strict:
+            raise CertificateError(msg)
+        logger.warning(msg)
+        return False
+
+    logger.debug("CRL signature valid, issuer=%s", crl_issuer)
+    return True
+
+
+def load_ca_certs_from_pem(pem_data: str | bytes) -> list[x509.Certificate]:
+    """Parse all certificates from a PEM bundle.
+
+    Useful for loading a CA bundle file into a list suitable for passing
+    as ``issuer_certs`` to :func:`check_revocation` or :func:`verify_crl`.
+    """
+    if isinstance(pem_data, str):
+        pem_data = pem_data.encode()
+    return x509.load_pem_x509_certificates(pem_data)
+
+
+def check_revocation(
+    cert: x509.Certificate,
+    config: CRLConfig,
+    issuer_certs: list[x509.Certificate] | None = None,
+) -> None:
     """Check certificate revocation against CRL distribution points.
 
     Uses a stale-while-revalidate cache strategy:
@@ -67,6 +135,10 @@ def check_revocation(cert: x509.Certificate, config: CRLConfig) -> None:
     Raises CertificateError if the certificate's serial number appears in any CRL.
     If a CRL cannot be fetched and no cached copy exists, behaviour is controlled
     by config.strict (default True -> raise).
+
+    If ``issuer_certs`` is provided, each CRL's signature and freshness are
+    verified against the CA certificates before the revocation check.  Without
+    ``issuer_certs``, signature verification is skipped (backward compatible).
     """
     urls = get_crl_distribution_points(cert)
     if not urls:
@@ -87,6 +159,12 @@ def check_revocation(cert: x509.Certificate, config: CRLConfig) -> None:
                 raise CertificateError("Could not verify revocation status; CRL unavailable") from e
             logger.warning("strict=false -- allowing without revocation check for %s", url)
             continue
+
+        # Verify CRL signature if CA certs are available.
+        if issuer_certs is not None:
+            verify_crl(crl, issuer_certs, strict=config.strict)
+        else:
+            logger.debug("No issuer_certs provided; skipping CRL signature verification for %s", url)
 
         if crl.get_revoked_certificate_by_serial_number(cert.serial_number) is not None:
             raise CertificateError(

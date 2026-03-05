@@ -7,7 +7,9 @@ from federal_pki.crl import (
     CRLConfig,
     get_crl_distribution_points,
     get_crl_max_age,
+    load_ca_certs_from_pem,
     parse_crl_bytes,
+    verify_crl,
 )
 
 
@@ -69,3 +71,47 @@ class TestGetCrlMaxAge:
         assert age is not None
         assert age >= 0
         assert age < 5  # just written
+
+
+class TestVerifyCrl:
+    def test_valid_signature(self, test_crl, ca_cert):
+        assert verify_crl(test_crl, [ca_cert], strict=True) is True
+
+    def test_invalid_signature_strict(self, test_crl, wrong_ca_cert):
+        """CRL signed by ca_key but verified against wrong_ca_cert should fail."""
+        with pytest.raises(CertificateError, match="No CA certificate found"):
+            verify_crl(test_crl, [wrong_ca_cert], strict=True)
+
+    def test_invalid_signature_non_strict(self, test_crl, wrong_ca_cert):
+        assert verify_crl(test_crl, [wrong_ca_cert], strict=False) is False
+
+    def test_no_matching_issuer_strict(self, test_crl):
+        with pytest.raises(CertificateError, match="No CA certificate found"):
+            verify_crl(test_crl, [], strict=True)
+
+    def test_no_matching_issuer_non_strict(self, test_crl):
+        assert verify_crl(test_crl, [], strict=False) is False
+
+    def test_expired_next_update_strict(self, expired_crl, ca_cert):
+        with pytest.raises(CertificateError, match="CRL has expired"):
+            verify_crl(expired_crl, [ca_cert], strict=True)
+
+    def test_expired_next_update_non_strict(self, expired_crl, ca_cert):
+        assert verify_crl(expired_crl, [ca_cert], strict=False) is False
+
+
+class TestLoadCaCertsFromPem:
+    def test_load_single_cert(self, ca_cert_pem):
+        certs = load_ca_certs_from_pem(ca_cert_pem)
+        assert len(certs) == 1
+
+    def test_load_str(self, ca_cert_pem):
+        certs = load_ca_certs_from_pem(ca_cert_pem.decode())
+        assert len(certs) == 1
+
+    def test_load_multiple(self, ca_cert_pem, wrong_ca_cert):
+        from cryptography.hazmat.primitives.serialization import Encoding
+
+        bundle = ca_cert_pem + wrong_ca_cert.public_bytes(Encoding.PEM)
+        certs = load_ca_certs_from_pem(bundle)
+        assert len(certs) == 2

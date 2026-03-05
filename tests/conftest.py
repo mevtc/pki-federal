@@ -153,6 +153,35 @@ def revoked_serial(cac_cert):
 
 
 @pytest.fixture(scope="session")
+def wrong_ca_key():
+    """A separate CA key for signature mismatch tests."""
+    return _generate_key()
+
+
+@pytest.fixture(scope="session")
+def wrong_ca_cert(wrong_ca_key):
+    """Self-signed CA certificate from a different authority."""
+    subject = issuer = x509.Name(
+        [
+            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Wrong CA Inc"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "Wrong Root CA"),
+        ]
+    )
+    return (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(issuer)
+        .public_key(wrong_ca_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC))
+        .not_valid_after(datetime.datetime(2030, 1, 1, tzinfo=datetime.UTC))
+        .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+        .sign(wrong_ca_key, hashes.SHA256())
+    )
+
+
+@pytest.fixture(scope="session")
 def test_crl(ca_key, ca_cert, revoked_serial):
     """A CRL revoking the cac_cert."""
     builder = x509.CertificateRevocationListBuilder()
@@ -166,6 +195,16 @@ def test_crl(ca_key, ca_cert, revoked_serial):
         .build()
     )
     builder = builder.add_revoked_certificate(revoked)
+    return builder.sign(ca_key, hashes.SHA256())
+
+
+@pytest.fixture(scope="session")
+def expired_crl(ca_key, ca_cert):
+    """A CRL whose nextUpdate is in the past."""
+    builder = x509.CertificateRevocationListBuilder()
+    builder = builder.issuer_name(ca_cert.subject)
+    builder = builder.last_update(datetime.datetime(2020, 1, 1, tzinfo=datetime.UTC))
+    builder = builder.next_update(datetime.datetime(2021, 1, 1, tzinfo=datetime.UTC))
     return builder.sign(ca_key, hashes.SHA256())
 
 
