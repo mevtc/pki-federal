@@ -127,6 +127,41 @@ def piv_cert(ca_key, ca_cert, signer_key):
 
 
 @pytest.fixture(scope="session")
+def eca_cert(ca_key, ca_cert, signer_key):
+    """End-entity certificate mimicking an ECA (contractor) certificate."""
+    subject = x509.Name(
+        [
+            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Contractor Corp"),
+            x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, "ECA"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "John A. Smith"),
+        ]
+    )
+    eca_policy = x509.PolicyInformation(
+        x509.ObjectIdentifier("2.16.840.1.101.3.2.1.12.2"), None
+    )
+    return (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(ca_cert.subject)
+        .public_key(signer_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC))
+        .not_valid_after(datetime.datetime(2030, 1, 1, tzinfo=datetime.UTC))
+        .add_extension(x509.CertificatePolicies([eca_policy]), critical=False)
+        .add_extension(
+            x509.SubjectAlternativeName(
+                [
+                    x509.RFC822Name("john.smith@contractor.com"),
+                ]
+            ),
+            critical=False,
+        )
+        .sign(ca_key, hashes.SHA256())
+    )
+
+
+@pytest.fixture(scope="session")
 def expired_cert(ca_key, ca_cert, signer_key):
     """An expired certificate."""
     subject = x509.Name(
