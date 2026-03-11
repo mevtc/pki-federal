@@ -164,7 +164,9 @@ def check_revocation(
         if issuer_certs is not None:
             verify_crl(crl, issuer_certs, strict=config.strict)
         else:
-            logger.debug("No issuer_certs provided; skipping CRL signature verification for %s", url)
+            logger.debug(
+                "No issuer_certs provided; skipping CRL signature verification for %s", url
+            )
 
         if crl.get_revoked_certificate_by_serial_number(cert.serial_number) is not None:
             raise CertificateError(
