@@ -1,11 +1,15 @@
 """X.509 certificate parsing utilities for DoD and Federal PKI certificates."""
 
+import logging
+import re
 from datetime import UTC, datetime
 from hashlib import sha256
 
 from cryptography import x509
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509.oid import ExtensionOID, NameOID
+
+logger = logging.getLogger(__name__)
 
 
 class CertificateError(Exception):
@@ -61,11 +65,23 @@ def extract_san_uris(cert: x509.Certificate) -> list[str]:
         return []
 
 
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
+
+
 def extract_san_uuid(cert: x509.Certificate) -> str | None:
-    """Extract PIV UUID from SAN URI (urn:uuid:...)."""
+    """Extract PIV UUID from SAN URI (urn:uuid:...).
+
+    Returns the UUID only if it matches the standard 8-4-4-4-12 hex format.
+    """
     for uri in extract_san_uris(cert):
         if uri.lower().startswith("urn:uuid:"):
-            return uri[9:]
+            candidate = uri[9:]
+            if _UUID_RE.match(candidate):
+                return candidate
+            logger.warning("Ignoring malformed UUID in SAN: %s", candidate)
     return None
 
 

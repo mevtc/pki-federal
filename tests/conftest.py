@@ -160,6 +160,34 @@ def eca_cert(ca_key, ca_cert, signer_key):
 
 
 @pytest.fixture(scope="session")
+def bad_uuid_cert(ca_key, ca_cert, signer_key):
+    """Certificate with a malformed UUID in SAN."""
+    subject = x509.Name(
+        [
+            x509.NameAttribute(NameOID.COMMON_NAME, "BAD.UUID.CERT"),
+        ]
+    )
+    return (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(ca_cert.subject)
+        .public_key(signer_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC))
+        .not_valid_after(datetime.datetime(2030, 1, 1, tzinfo=datetime.UTC))
+        .add_extension(
+            x509.SubjectAlternativeName(
+                [
+                    x509.UniformResourceIdentifier("urn:uuid:not-a-valid-uuid"),
+                ]
+            ),
+            critical=False,
+        )
+        .sign(ca_key, hashes.SHA256())
+    )
+
+
+@pytest.fixture(scope="session")
 def expired_cert(ca_key, ca_cert, signer_key):
     """An expired certificate."""
     subject = x509.Name(

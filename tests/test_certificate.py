@@ -76,6 +76,10 @@ class TestExtractSanUuid:
         uuid = extract_san_uuid(cac_cert)
         assert uuid is None
 
+    def test_malformed_uuid_rejected(self, bad_uuid_cert):
+        uuid = extract_san_uuid(bad_uuid_cert)
+        assert uuid is None
+
 
 class TestCertFingerprint:
     def test_returns_hex_string(self, cac_cert):
