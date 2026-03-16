@@ -31,11 +31,11 @@ FPKI_EMAIL_SIGNING_OIDS: set[str] = {
 # ECA (External Certification Authority) authentication certificate policy OIDs.
 # Issued to contractors and non-DoD entities accessing DoD systems (IA-8).
 ECA_AUTH_OIDS: set[str] = {
-    "2.16.840.1.101.3.2.1.12.1",   # id-eca-medium
-    "2.16.840.1.101.3.2.1.12.2",   # id-eca-medium-hardware
-    "2.16.840.1.101.3.2.1.12.3",   # id-eca-medium-token
-    "2.16.840.1.101.3.2.1.12.4",   # id-eca-medium-sha256
-    "2.16.840.1.101.3.2.1.12.5",   # id-eca-medium-token-sha256
-    "2.16.840.1.101.3.2.1.12.6",   # id-eca-medium-hardware-pivi
+    "2.16.840.1.101.3.2.1.12.1",  # id-eca-medium
+    "2.16.840.1.101.3.2.1.12.2",  # id-eca-medium-hardware
+    "2.16.840.1.101.3.2.1.12.3",  # id-eca-medium-token
+    "2.16.840.1.101.3.2.1.12.4",  # id-eca-medium-sha256
+    "2.16.840.1.101.3.2.1.12.5",  # id-eca-medium-token-sha256
+    "2.16.840.1.101.3.2.1.12.6",  # id-eca-medium-hardware-pivi
     "2.16.840.1.101.3.2.1.12.10",  # id-eca-medium-hardware-sha256
 }

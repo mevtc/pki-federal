@@ -1,13 +1,11 @@
 """Tests for federal_pki.providers module."""
 
 from federal_pki.providers import (
-    AuthProvider,
     BUILTIN_PROVIDERS,
     CAC_PROVIDER,
-    CNParseStrategy,
     ECA_PROVIDER,
-    HeuristicRule,
     PIV_PROVIDER,
+    CNParseStrategy,
     PrimaryIDStrategy,
     ProviderRegistry,
     default_registry,

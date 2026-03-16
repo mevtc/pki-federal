@@ -5,7 +5,6 @@ Controls: IA-2 (Identification), IA-5(2) (PKI-Based Auth)
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 
 from cryptography import x509
@@ -20,7 +19,6 @@ from .certificate import (
 )
 from .cn_parsers import parse_cn
 from .providers import (
-    AuthProvider,
     PrimaryIDStrategy,
     ProviderRegistry,
     default_registry,
@@ -106,9 +104,7 @@ def parse_identity(
     policy_set = set(identity.policy_oids)
     provider = registry.match_oids(policy_set)
     if provider is None:
-        provider = registry.match_heuristic(
-            identity.cn, identity.organization, identity.ou
-        )
+        provider = registry.match_heuristic(identity.cn, identity.organization, identity.ou)
     if provider is None:
         # Fall back to last provider in registry
         all_providers = registry.all()

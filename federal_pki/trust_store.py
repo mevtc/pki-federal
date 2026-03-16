@@ -287,9 +287,7 @@ def build_ca_bundle_for_providers(
             label = source.label or provider.name
             try:
                 certs = fetch_trust_store_source(source)
-                logger.info(
-                    "Fetched %d certs from %s (%s)", len(certs), source.url, label
-                )
+                logger.info("Fetched %d certs from %s (%s)", len(certs), source.url, label)
                 cert_lists.append((label, certs))
             except Exception as e:
                 logger.error("Failed to fetch %s: %s", source.url, e)

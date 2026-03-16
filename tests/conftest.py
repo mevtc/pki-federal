@@ -137,9 +137,7 @@ def eca_cert(ca_key, ca_cert, signer_key):
             x509.NameAttribute(NameOID.COMMON_NAME, "John A. Smith"),
         ]
     )
-    eca_policy = x509.PolicyInformation(
-        x509.ObjectIdentifier("2.16.840.1.101.3.2.1.12.2"), None
-    )
+    eca_policy = x509.PolicyInformation(x509.ObjectIdentifier("2.16.840.1.101.3.2.1.12.2"), None)
     return (
         x509.CertificateBuilder()
         .subject_name(subject)

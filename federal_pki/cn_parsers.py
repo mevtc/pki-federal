@@ -6,6 +6,7 @@ Subject CN field according to the conventions of that credential ecosystem.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from .providers import CNParseStrategy
@@ -95,7 +96,7 @@ def _parse_eca_human(identity: CertIdentity) -> None:
         identity.lastname = cn
 
 
-_PARSERS: dict[CNParseStrategy, callable] = {
+_PARSERS: dict[CNParseStrategy, Callable[[CertIdentity], None]] = {
     CNParseStrategy.CAC_DOT: _parse_cac_dot,
     CNParseStrategy.PIV_FLEXIBLE: _parse_piv_flexible,
     CNParseStrategy.ECA_HUMAN: _parse_eca_human,

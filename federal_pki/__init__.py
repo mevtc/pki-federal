@@ -2,23 +2,23 @@
 
 from .certificate import CertificateError
 from .providers import (
-    AuthProvider,
     BUILTIN_PROVIDERS,
     CAC_PROVIDER,
     ECA_PROVIDER,
     PIV_PROVIDER,
+    AuthProvider,
     ProviderRegistry,
     default_registry,
     full_registry,
 )
 
 __all__ = [
-    "CertificateError",
-    "AuthProvider",
     "BUILTIN_PROVIDERS",
     "CAC_PROVIDER",
     "ECA_PROVIDER",
     "PIV_PROVIDER",
+    "AuthProvider",
+    "CertificateError",
     "ProviderRegistry",
     "default_registry",
     "full_registry",
