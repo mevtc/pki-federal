@@ -61,8 +61,7 @@ def _download(url: str, timeout: int = 60, max_bytes: int = MAX_DOWNLOAD_BYTES) 
     resp.raise_for_status()
     if len(resp.content) > max_bytes:
         raise ValueError(
-            f"Download from {url} exceeds size limit "
-            f"({len(resp.content)} > {max_bytes} bytes)"
+            f"Download from {url} exceeds size limit ({len(resp.content)} > {max_bytes} bytes)"
         )
     logger.info("Downloaded %d bytes from %s", len(resp.content), url)
     return resp.content
