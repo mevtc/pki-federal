@@ -1,7 +1,9 @@
 """DoD and Federal PKI CA trust store management.
 
 Downloads, parses, deduplicates, and merges CA certificate bundles from
-DISA (DoD) and repo.fpki.gov (Federal PKI).
+DISA (DoD), repo.fpki.gov (Federal PKI), and other provider sources.
+
+Controls: SC-12 (Cryptographic Key Management), IA-5(2) (PKI-Based Auth)
 """
 
 import io
@@ -183,6 +185,113 @@ def build_ca_bundle(
         [("DoD", dod_certs), ("FPKI", fpki_certs)],
         filter_fn=filter_fn,
     )
+
+    if output_path:
+        from pathlib import Path
+
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(pem_bundle)
+        logger.info("CA bundle written to %s", output_path)
+
+    return pem_bundle, stats
+
+
+# ---------------------------------------------------------------------------
+# Provider-aware trust store building (SC-12)
+# ---------------------------------------------------------------------------
+
+
+def fetch_trust_store_source(source) -> list:
+    """Download and parse certificates from a single TrustStoreSource.
+
+    Dispatches on source.format: pkcs7_zip, pkcs7_der, der.
+    """
+    fmt = source.format
+    if fmt == "pkcs7_zip":
+        return _fetch_pkcs7_zip(source.url)
+    elif fmt == "pkcs7_der":
+        return _fetch_pkcs7_der(source.url)
+    elif fmt == "der":
+        return _fetch_der_cert(source.url)
+    else:
+        logger.warning("Unknown trust store format: %s", fmt)
+        return []
+
+
+def _fetch_pkcs7_zip(url: str) -> list:
+    """Download ZIP containing PKCS7 bundles, parse all certs."""
+    certs = []
+    zip_data = _download(url)
+    with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
+        for name in zf.namelist():
+            if not (name.endswith(".p7b") or name.endswith(".p7c")):
+                continue
+            p7_data = zf.read(name)
+            try:
+                parsed = load_pem_pkcs7_certificates(p7_data)
+                certs.extend(parsed)
+            except Exception:
+                try:
+                    parsed = load_der_pkcs7_certificates(p7_data)
+                    certs.extend(parsed)
+                except Exception as e:
+                    logger.warning("Could not parse %s: %s", name, e)
+    return certs
+
+
+def _fetch_pkcs7_der(url: str) -> list:
+    """Download a DER-encoded PKCS7 bundle."""
+    data = _download(url)
+    return list(load_der_pkcs7_certificates(data))
+
+
+def _fetch_der_cert(url: str) -> list:
+    """Download a single DER-encoded X.509 certificate."""
+    data = _download(url)
+    return [load_der_x509_certificate(data)]
+
+
+def build_ca_bundle_for_providers(
+    registry=None,
+    output_path: str | None = None,
+    filter_fn=None,
+) -> tuple[str, dict]:
+    """Fetch CA certificates for all providers in a registry.
+
+    Only loads CAs from enabled providers, enforcing least-privilege on the
+    trust chain (SC-12).
+
+    Args:
+        registry: ProviderRegistry. Defaults to CAC + PIV.
+        output_path: If provided, write the PEM bundle to this path.
+        filter_fn: Optional callable(cert) -> bool for filtering.
+
+    Returns:
+        Tuple of (pem_bundle_string, stats_dict).
+    """
+    if registry is None:
+        from .providers import default_registry
+
+        registry = default_registry()
+
+    cert_lists = []
+    for provider in registry.all():
+        for source in provider.trust_store_sources:
+            label = source.label or provider.name
+            try:
+                certs = fetch_trust_store_source(source)
+                logger.info(
+                    "Fetched %d certs from %s (%s)", len(certs), source.url, label
+                )
+                cert_lists.append((label, certs))
+            except Exception as e:
+                logger.error("Failed to fetch %s: %s", source.url, e)
+
+    if not cert_lists or not any(certs for _, certs in cert_lists):
+        raise RuntimeError("No certificates fetched from any provider source")
+
+    pem_bundle, stats = merge_and_deduplicate(cert_lists, filter_fn=filter_fn)
 
     if output_path:
         from pathlib import Path

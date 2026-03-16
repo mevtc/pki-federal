@@ -1,4 +1,9 @@
-"""CAC and PIV identity extraction from x509 certificates."""
+"""CAC, PIV, and ECA identity extraction from x509 certificates.
+
+Controls: IA-2 (Identification), IA-5(2) (PKI-Based Auth)
+"""
+
+from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
@@ -13,15 +18,21 @@ from .certificate import (
     get_name_attr,
     get_policy_oids,
 )
-from .oids import DOD_AUTH_OIDS, FPKI_PIV_AUTH_OIDS
+from .cn_parsers import parse_cn
+from .providers import (
+    AuthProvider,
+    PrimaryIDStrategy,
+    ProviderRegistry,
+    default_registry,
+)
 
 
 @dataclass
 class CertIdentity:
-    """Parsed identity from a CAC or PIV client certificate."""
+    """Parsed identity from a client certificate."""
 
     primary_id: str | None = None
-    credential_type: str | None = None  # "CAC" or "PIV"
+    credential_type: str | None = None  # "CAC", "PIV", "ECA", etc.
     cn: str | None = None
     firstname: str | None = None
     lastname: str | None = None
@@ -58,8 +69,20 @@ class CertIdentity:
         }
 
 
-def parse_identity(cert: x509.Certificate) -> CertIdentity:
-    """Parse an x509 certificate into a CertIdentity."""
+def parse_identity(
+    cert: x509.Certificate,
+    registry: ProviderRegistry | None = None,
+) -> CertIdentity:
+    """Parse an x509 certificate into a CertIdentity.
+
+    Args:
+        cert: The x509 client certificate.
+        registry: Provider registry to match against. Defaults to
+            CAC + PIV (backward compatible).
+    """
+    if registry is None:
+        registry = default_registry()
+
     identity = CertIdentity()
 
     # Subject fields
@@ -79,105 +102,86 @@ def parse_identity(cert: x509.Certificate) -> CertIdentity:
     # Policy OIDs
     identity.policy_oids = get_policy_oids(cert)
 
-    # Determine credential type
+    # Match provider by OID, then heuristic fallback
     policy_set = set(identity.policy_oids)
-    if policy_set & DOD_AUTH_OIDS:
-        identity.credential_type = "CAC"
-    elif policy_set & FPKI_PIV_AUTH_OIDS:
-        identity.credential_type = "PIV"
-    else:
-        identity.credential_type = guess_credential_type(identity.cn, identity.organization)
+    provider = registry.match_oids(policy_set)
+    if provider is None:
+        provider = registry.match_heuristic(
+            identity.cn, identity.organization, identity.ou
+        )
+    if provider is None:
+        # Fall back to last provider in registry
+        all_providers = registry.all()
+        provider = all_providers[-1] if all_providers else None
 
-    # Extract identifiers based on type
-    if identity.credential_type == "CAC":
-        parse_cac_identity(identity)
+    if provider:
+        identity.credential_type = provider.name
+        parse_cn(identity, provider.cn_parse_strategy)
     else:
-        parse_piv_identity(identity)
+        identity.credential_type = "UNKNOWN"
 
-    # Extract UUID and FASC-N from SAN (both types may have them)
+    # Extract UUID and FASC-N from SAN (all types may have them)
     identity.piv_uuid = identity.piv_uuid or extract_san_uuid(cert)
     identity.fascn = identity.fascn or extract_san_fascn(cert)
 
-    # Build stable primary key
-    if identity.edipi:
-        identity.primary_id = f"edipi:{identity.edipi}"
-    elif identity.piv_uuid:
-        identity.primary_id = f"uuid:{identity.piv_uuid}"
-    elif identity.fascn:
-        identity.primary_id = f"fascn:{identity.fascn}"
+    # Build stable primary key based on provider strategy
+    if provider:
+        identity.primary_id = _select_primary_id(identity, provider.primary_id_strategy)
     else:
         identity.primary_id = f"dn:{identity.subject_dn}"
 
     return identity
 
 
+def _select_primary_id(identity: CertIdentity, strategy: PrimaryIDStrategy) -> str:
+    """Select the primary identifier based on provider strategy."""
+    if strategy == PrimaryIDStrategy.EDIPI_FIRST:
+        if identity.edipi:
+            return f"edipi:{identity.edipi}"
+        if identity.piv_uuid:
+            return f"uuid:{identity.piv_uuid}"
+        if identity.fascn:
+            return f"fascn:{identity.fascn}"
+        return f"dn:{identity.subject_dn}"
+
+    elif strategy == PrimaryIDStrategy.UUID_FIRST:
+        if identity.piv_uuid:
+            return f"uuid:{identity.piv_uuid}"
+        if identity.fascn:
+            return f"fascn:{identity.fascn}"
+        if identity.edipi:
+            return f"edipi:{identity.edipi}"
+        return f"dn:{identity.subject_dn}"
+
+    elif strategy == PrimaryIDStrategy.EMAIL_FIRST:
+        if identity.email:
+            return f"email:{identity.email}"
+        return f"dn:{identity.subject_dn}"
+
+    return f"dn:{identity.subject_dn}"
+
+
+# ---------------------------------------------------------------------------
+# Backward-compatible aliases (deprecated — use providers + cn_parsers)
+# ---------------------------------------------------------------------------
+
+
 def parse_cac_identity(identity: CertIdentity) -> None:
-    """Parse CAC-specific fields from the Common Name.
+    """Deprecated: use parse_cn() with provider."""
+    from .cn_parsers import _parse_cac_dot
 
-    CAC CN format: LASTNAME.FIRSTNAME.MIDDLEINITIAL.EDIPI
-    Example: SMITH.JOHN.A.1234567890
-    """
-    if not identity.cn:
-        return
-
-    parts = identity.cn.split(".")
-    if len(parts) >= 4 and parts[-1].isdigit() and len(parts[-1]) == 10:
-        identity.edipi = parts[-1]
-        identity.lastname = parts[0]
-        identity.firstname = parts[1]
-    elif len(parts) >= 2:
-        identity.lastname = parts[0]
-        identity.firstname = parts[1]
-    else:
-        identity.lastname = identity.cn
+    _parse_cac_dot(identity)
 
 
 def parse_piv_identity(identity: CertIdentity) -> None:
-    """Parse PIV-specific fields from the Common Name.
+    """Deprecated: use parse_cn() with provider."""
+    from .cn_parsers import _parse_piv_flexible
 
-    PIV CN varies by agency. Common formats:
-      - "John A. Smith"
-      - "SMITH, JOHN A"
-      - "John Smith"
-    """
-    if not identity.cn:
-        return
-
-    cn = identity.cn.strip()
-
-    # "LASTNAME, FIRSTNAME MIDDLE" format
-    if "," in cn:
-        parts = [p.strip() for p in cn.split(",", 1)]
-        identity.lastname = parts[0]
-        if len(parts) > 1:
-            first_parts = parts[1].split()
-            identity.firstname = first_parts[0] if first_parts else None
-        return
-
-    # "LAST.FIRST.MI.NUMBER" — some PIV certs use CAC-like format
-    dot_parts = cn.split(".")
-    if len(dot_parts) >= 3 and dot_parts[-1].isdigit():
-        identity.lastname = dot_parts[0]
-        identity.firstname = dot_parts[1]
-        if len(dot_parts[-1]) == 10:
-            identity.edipi = dot_parts[-1]
-        return
-
-    # "Firstname [Middle] Lastname" format
-    parts = cn.split()
-    if len(parts) >= 2:
-        identity.firstname = parts[0]
-        identity.lastname = parts[-1]
-    else:
-        identity.lastname = cn
+    _parse_piv_flexible(identity)
 
 
 def guess_credential_type(cn: str | None, org: str | None) -> str:
-    """Heuristic fallback when policy OIDs don't match known sets."""
-    if org and "department of defense" in org.lower():
-        return "CAC"
-    if cn and re.match(r"^[A-Z]+\.[A-Z]+\.[A-Z]*\.\d{10}$", cn or ""):
-        return "CAC"
-    if org and any(k in org.lower() for k in ["energy", "nnsa", "doe"]):
-        return "PIV"
-    return "PIV"  # Default to PIV for civilian agencies
+    """Deprecated: use ProviderRegistry.match_heuristic()."""
+    reg = default_registry()
+    provider = reg.match_heuristic(cn, org, None)
+    return provider.name if provider else "PIV"
