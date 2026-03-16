@@ -29,6 +29,12 @@ dependencies = [
     "platformdirs>=4.0",
 ]
 
+[project.urls]
+Homepage = "https://oss.mevtc.com"
+Repository = "https://github.com/mevtc/federal-pki"
+Issues = "https://github.com/mevtc/federal-pki/issues"
+Changelog = "https://github.com/mevtc/federal-pki/blob/main/CHANGELOG.md"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
