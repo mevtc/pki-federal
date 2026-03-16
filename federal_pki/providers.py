@@ -174,7 +174,19 @@ class ProviderRegistry:
     _providers: dict[str, AuthProvider] = field(default_factory=dict)
 
     def register(self, provider: AuthProvider) -> None:
-        """Add or replace a provider."""
+        """Add or replace a provider.
+
+        Validates regex patterns in heuristic rules at registration time.
+        Pattern complexity is the caller's responsibility — see DEVELOPER_NOTES.md.
+        """
+        for rule in provider.heuristics:
+            if rule.is_regex:
+                try:
+                    re.compile(rule.pattern)
+                except re.error as e:
+                    raise ValueError(
+                        f"Invalid regex in heuristic for provider {provider.name!r}: {e}"
+                    ) from e
         self._providers[provider.name] = provider
 
     def get(self, name: str) -> AuthProvider | None:
