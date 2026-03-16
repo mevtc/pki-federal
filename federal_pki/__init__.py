@@ -1,6 +1,7 @@
 """DoD and Federal PKI certificate utilities."""
 
 from .certificate import CertificateError
+from .crl import CRLRefreshError
 from .providers import (
     BUILTIN_PROVIDERS,
     CAC_PROVIDER,
@@ -18,6 +19,7 @@ __all__ = [
     "ECA_PROVIDER",
     "PIV_PROVIDER",
     "AuthProvider",
+    "CRLRefreshError",
     "CertificateError",
     "ProviderRegistry",
     "default_registry",

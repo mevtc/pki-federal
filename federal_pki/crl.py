@@ -18,6 +18,10 @@ from .certificate import CertificateError
 logger = logging.getLogger(__name__)
 
 
+class CRLRefreshError(CertificateError):
+    """Raised when a background CRL refresh fails."""
+
+
 def _default_cache_dir() -> str:
     """Return the platform-standard cache directory for federal-pki CRLs."""
     return str(Path(user_cache_dir("federal-pki")) / "crls")
@@ -74,17 +78,18 @@ def verify_crl(
     ``CertificateError`` on any failure.  In non-strict mode, logs a warning
     and returns False.
     """
-    crl_issuer = crl.issuer.rfc4514_string()
+    crl_issuer_dn = crl.issuer
 
-    # Find matching issuer cert by subject DN.
+    # Find matching issuer cert by parsed DN comparison (handles attribute
+    # ordering and encoding differences that string comparison would miss).
     issuer_cert = None
     for ca in issuer_certs:
-        if ca.subject.rfc4514_string() == crl_issuer:
+        if ca.subject == crl_issuer_dn:
             issuer_cert = ca
             break
 
     if issuer_cert is None:
-        msg = f"No CA certificate found for CRL issuer: {crl_issuer}"
+        msg = f"No CA certificate found for CRL issuer: {crl_issuer_dn.rfc4514_string()}"
         if strict:
             raise CertificateError(msg)
         logger.warning(msg)
@@ -92,7 +97,7 @@ def verify_crl(
 
     # Verify signature.
     if not crl.is_signature_valid(issuer_cert.public_key()):  # type: ignore[arg-type]
-        msg = f"CRL signature verification failed for issuer: {crl_issuer}"
+        msg = f"CRL signature verification failed for issuer: {crl_issuer_dn.rfc4514_string()}"
         if strict:
             raise CertificateError(msg)
         logger.warning(msg)
@@ -106,7 +111,7 @@ def verify_crl(
         logger.warning(msg)
         return False
 
-    logger.debug("CRL signature valid, issuer=%s", crl_issuer)
+    logger.debug("CRL signature valid, issuer=%s", crl_issuer_dn.rfc4514_string())
     return True
 
 
@@ -206,7 +211,7 @@ def get_crl(url: str, config: CRLConfig) -> x509.CertificateRevocationList:
             url,
         )
         threading.Thread(
-            target=refresh_crl,
+            target=_refresh_crl_background,
             args=(url, cache_file, config.fetch_timeout),
             daemon=True,
         ).start()
@@ -219,10 +224,24 @@ def get_crl(url: str, config: CRLConfig) -> x509.CertificateRevocationList:
 MAX_CRL_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
+def _refresh_crl_background(url: str, cache_file: Path, timeout: int) -> None:
+    """Wrapper for background CRL refresh that logs exceptions.
+
+    Raises CRLRefreshError so that callers using a custom thread pool or
+    callback mechanism can observe the failure. In the default daemon-thread
+    usage, the exception is logged and then discarded.
+    """
+    try:
+        refresh_crl(url, cache_file, timeout)
+    except Exception as e:
+        logger.error("Background CRL refresh failed for %s: %s", url, e)
+        raise CRLRefreshError(f"Background CRL refresh failed for {url}: {e}") from e
+
+
 def refresh_crl(url: str, cache_file: Path, timeout: int = 10) -> x509.CertificateRevocationList:
     """Fetch a CRL from url, write it to cache_file, and return parsed CRL.
 
-    Called directly (blocking) when no cache exists, or from a daemon thread
+    Called directly (blocking) when no cache exists, or from ``_refresh_crl_background``
     when the cache is stale.  Raises ``ValueError`` if the response exceeds
     ``MAX_CRL_BYTES``.
     """
