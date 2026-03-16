@@ -48,6 +48,15 @@ bandit -r federal_pki/
 pip-audit
 ```
 
+Bandit is configured in `pyproject.toml` with the following suppressions:
+
+- **`exclude_dirs = ["tests"]`** — Test code uses self-signed certificates and intentionally
+  exercises error paths. Scanning test fixtures produces false positives.
+- **`B101`** (`assert`) — `assert` is used in tests and for internal invariants that are
+  not security-relevant. Runtime input validation uses explicit exceptions, not `assert`.
+- **`B110`** (`try/except/pass`) — Used in best-effort cleanup paths (e.g., CRL cache fallback)
+  where silently continuing is the intended behavior.
+
 ## Submitting Changes
 
 1. Create a feature branch from `main`:
