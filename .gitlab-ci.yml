@@ -5,6 +5,10 @@ stages:
   - lint
   - security
   - test
+  - publish
+
+variables:
+  PIP_EXTRA_INDEX_URL: https://gitlab-ci-token:${CI_JOB_TOKEN}@repo.mevtc.com/api/v4/groups/mevtc/-/packages/pypi/simple
 
 .fargate:
   tags:
@@ -75,3 +79,16 @@ test:
     reports:
       junit: test-report.xml
     when: always
+
+publish:
+  extends: .fargate
+  stage: publish
+  before_script:
+    - pip3 install build twine
+  script:
+    - python3 -m build
+    - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token
+      twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: on_success
