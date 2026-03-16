@@ -10,6 +10,12 @@ Python utilities for working with DoD CAC and Federal PKI certificates.
 - **Trust store management** — download, merge, and deduplicate DoD (DISA) and Federal PKI CA bundles into a single PEM bundle
 - **OID registries** — known policy OIDs for DoD authentication, PIV authentication, and email signing certificates
 
+## Architecture
+
+federal-pki is a thin federal-specific layer built on [pki-core](https://github.com/mevtc/pki-core), which provides the generic X.509 infrastructure (certificate parsing, CRL caching, identity extraction, validation pipeline). If you're working with non-federal PKI, use pki-core directly.
+
+All `from federal_pki.*` imports continue to work — federal-pki re-exports the full pki-core API alongside its own DoD CAC, Federal PIV, and ECA provider definitions.
+
 ## Installation
 
 ```bash
