@@ -78,6 +78,9 @@ def fetch_dod_certs(url: str | None = None) -> list:
         for name in zf.namelist():
             if not (name.endswith(".p7b") or name.endswith(".p7c")):
                 continue
+            if ".." in name or name.startswith("/"):
+                logger.warning("Skipping suspicious ZIP entry: %s", name)
+                continue
 
             p7_data = zf.read(name)
             try:
@@ -226,6 +229,9 @@ def _fetch_pkcs7_zip(url: str) -> list:
     with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         for name in zf.namelist():
             if not (name.endswith(".p7b") or name.endswith(".p7c")):
+                continue
+            if ".." in name or name.startswith("/"):
+                logger.warning("Skipping suspicious ZIP entry: %s", name)
                 continue
             p7_data = zf.read(name)
             try:
