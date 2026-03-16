@@ -6,18 +6,10 @@ Subject CN field according to the conventions of that credential ecosystem.
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from .providers import CNParseStrategy
-
 if TYPE_CHECKING:
-    from .identity import CertIdentity
-
-
-def parse_cn(identity: CertIdentity, strategy: CNParseStrategy) -> None:
-    """Dispatch CN parsing based on strategy."""
-    _PARSERS[strategy](identity)
+    from pki_core.identity import CertIdentity
 
 
 def _parse_cac_dot(identity: CertIdentity) -> None:
@@ -96,8 +88,7 @@ def _parse_eca_human(identity: CertIdentity) -> None:
         identity.lastname = cn
 
 
-_PARSERS: dict[CNParseStrategy, Callable[[CertIdentity], None]] = {
-    CNParseStrategy.CAC_DOT: _parse_cac_dot,
-    CNParseStrategy.PIV_FLEXIBLE: _parse_piv_flexible,
-    CNParseStrategy.ECA_HUMAN: _parse_eca_human,
-}
+# Public aliases
+parse_cac_dot = _parse_cac_dot
+parse_piv_flexible = _parse_piv_flexible
+parse_eca_human = _parse_eca_human

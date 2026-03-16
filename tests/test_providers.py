@@ -1,12 +1,13 @@
 """Tests for federal_pki.providers module."""
 
+from pki_core.selectors import select_edipi_first, select_email_first, select_uuid_first
+
+from federal_pki.cn_parsers import _parse_cac_dot, _parse_eca_human, _parse_piv_flexible
 from federal_pki.providers import (
     BUILTIN_PROVIDERS,
     CAC_PROVIDER,
     ECA_PROVIDER,
     PIV_PROVIDER,
-    CNParseStrategy,
-    PrimaryIDStrategy,
     ProviderRegistry,
     default_registry,
     full_registry,
@@ -16,22 +17,22 @@ from federal_pki.providers import (
 class TestBuiltinProviders:
     def test_cac_provider(self):
         assert CAC_PROVIDER.name == "CAC"
-        assert CAC_PROVIDER.cn_parse_strategy == CNParseStrategy.CAC_DOT
-        assert CAC_PROVIDER.primary_id_strategy == PrimaryIDStrategy.EDIPI_FIRST
+        assert CAC_PROVIDER.cn_parser is _parse_cac_dot
+        assert CAC_PROVIDER.primary_id_selector is select_edipi_first
         assert "2.16.840.1.101.2.1.11.19" in CAC_PROVIDER.auth_oids
         assert CAC_PROVIDER.min_aal == 3
 
     def test_piv_provider(self):
         assert PIV_PROVIDER.name == "PIV"
-        assert PIV_PROVIDER.cn_parse_strategy == CNParseStrategy.PIV_FLEXIBLE
-        assert PIV_PROVIDER.primary_id_strategy == PrimaryIDStrategy.UUID_FIRST
+        assert PIV_PROVIDER.cn_parser is _parse_piv_flexible
+        assert PIV_PROVIDER.primary_id_selector is select_uuid_first
         assert "2.16.840.1.101.3.2.1.3.13" in PIV_PROVIDER.auth_oids
         assert PIV_PROVIDER.min_aal == 3
 
     def test_eca_provider(self):
         assert ECA_PROVIDER.name == "ECA"
-        assert ECA_PROVIDER.cn_parse_strategy == CNParseStrategy.ECA_HUMAN
-        assert ECA_PROVIDER.primary_id_strategy == PrimaryIDStrategy.EMAIL_FIRST
+        assert ECA_PROVIDER.cn_parser is _parse_eca_human
+        assert ECA_PROVIDER.primary_id_selector is select_email_first
         assert "2.16.840.1.101.3.2.1.12.2" in ECA_PROVIDER.auth_oids
         assert ECA_PROVIDER.min_aal == 2
         assert "IA-8" in ECA_PROVIDER.controls
