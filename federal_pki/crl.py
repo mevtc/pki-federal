@@ -2,6 +2,7 @@
 
 import hashlib
 import logging
+import os
 import threading
 import time
 from dataclasses import dataclass, field
@@ -183,27 +184,33 @@ def get_crl(url: str, config: CRLConfig) -> x509.CertificateRevocationList:
       3. No cache     -> fetch synchronously, cache result, return.
     """
     cache_dir = Path(config.cache_dir)
-    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
 
     url_hash = hashlib.sha256(url.encode()).hexdigest()[:24]
     cache_file = cache_dir / f"{url_hash}.crl"
 
-    if cache_file.exists():
-        age = time.time() - cache_file.stat().st_mtime
+    try:
+        st = cache_file.stat()
+        age = time.time() - st.st_mtime
+        data = cache_file.read_bytes()
+    except FileNotFoundError:
+        data = None
+        age = float("inf")
+
+    if data is not None:
         if age < config.cache_ttl:
-            return parse_crl_bytes(cache_file.read_bytes())
-        else:
-            logger.debug(
-                "CRL stale (%.0fs old) for %s -- serving cache, refreshing in background",
-                age,
-                url,
-            )
-            threading.Thread(
-                target=refresh_crl,
-                args=(url, cache_file, config.fetch_timeout),
-                daemon=True,
-            ).start()
-            return parse_crl_bytes(cache_file.read_bytes())
+            return parse_crl_bytes(data)
+        logger.debug(
+            "CRL stale (%.0fs old) for %s -- serving cache, refreshing in background",
+            age,
+            url,
+        )
+        threading.Thread(
+            target=refresh_crl,
+            args=(url, cache_file, config.fetch_timeout),
+            daemon=True,
+        ).start()
+        return parse_crl_bytes(data)
 
     logger.debug("No CRL cache for %s -- fetching synchronously", url)
     return refresh_crl(url, cache_file, config.fetch_timeout)
@@ -229,7 +236,11 @@ def refresh_crl(url: str, cache_file: Path, timeout: int = 10) -> x509.Certifica
             )
         crl = parse_crl_bytes(data)
         tmp = cache_file.with_suffix(".tmp")
-        tmp.write_bytes(data)
+        fd = os.open(str(tmp), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        try:
+            os.write(fd, data)
+        finally:
+            os.close(fd)
         tmp.rename(cache_file)
         logger.debug("CRL cached from %s (%d bytes)", url, len(data))
         return crl
