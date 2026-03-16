@@ -209,16 +209,24 @@ def get_crl(url: str, config: CRLConfig) -> x509.CertificateRevocationList:
     return refresh_crl(url, cache_file, config.fetch_timeout)
 
 
+MAX_CRL_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
 def refresh_crl(url: str, cache_file: Path, timeout: int = 10) -> x509.CertificateRevocationList:
     """Fetch a CRL from url, write it to cache_file, and return parsed CRL.
 
     Called directly (blocking) when no cache exists, or from a daemon thread
-    when the cache is stale.
+    when the cache is stale.  Raises ``ValueError`` if the response exceeds
+    ``MAX_CRL_BYTES``.
     """
     try:
         resp = httpx.get(url, timeout=timeout, follow_redirects=True)
         resp.raise_for_status()
         data = resp.content
+        if len(data) > MAX_CRL_BYTES:
+            raise ValueError(
+                f"CRL from {url} exceeds size limit ({len(data)} > {MAX_CRL_BYTES} bytes)"
+            )
         crl = parse_crl_bytes(data)
         tmp = cache_file.with_suffix(".tmp")
         tmp.write_bytes(data)

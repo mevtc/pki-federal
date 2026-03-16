@@ -43,8 +43,14 @@ USER_AGENT = "federal-pki/0.1"
 # ---------------------------------------------------------------------------
 
 
-def _download(url: str, timeout: int = 60) -> bytes:
-    """Download a URL and return raw bytes."""
+MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024  # 50 MB
+
+
+def _download(url: str, timeout: int = 60, max_bytes: int = MAX_DOWNLOAD_BYTES) -> bytes:
+    """Download a URL and return raw bytes.
+
+    Raises ``ValueError`` if the response exceeds *max_bytes*.
+    """
     logger.info("Downloading %s", url)
     resp = httpx.get(
         url,
@@ -53,6 +59,11 @@ def _download(url: str, timeout: int = 60) -> bytes:
         headers={"User-Agent": USER_AGENT},
     )
     resp.raise_for_status()
+    if len(resp.content) > max_bytes:
+        raise ValueError(
+            f"Download from {url} exceeds size limit "
+            f"({len(resp.content)} > {max_bytes} bytes)"
+        )
     logger.info("Downloaded %d bytes from %s", len(resp.content), url)
     return resp.content
 
