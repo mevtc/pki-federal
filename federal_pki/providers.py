@@ -115,17 +115,17 @@ PIV_PROVIDER = AuthProvider(
     ),
     trust_store_sources=(
         TrustStoreSource(
-            url="http://repo.fpki.gov/fcpca/fcpcag2.crt",
+            url="https://repo.fpki.gov/fcpca/fcpcag2.crt",
             format="der",
             label="FPKI",
         ),
         TrustStoreSource(
-            url="http://repo.fpki.gov/bridge/caCertsIssuedTofbcag4.p7c",
+            url="https://repo.fpki.gov/bridge/caCertsIssuedTofbcag4.p7c",
             format="pkcs7_der",
             label="FPKI",
         ),
         TrustStoreSource(
-            url="http://repo.fpki.gov/bridge/caCertsIssuedByfbcag4.p7c",
+            url="https://repo.fpki.gov/bridge/caCertsIssuedByfbcag4.p7c",
             format="pkcs7_der",
             label="FPKI",
         ),

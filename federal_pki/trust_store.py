@@ -31,9 +31,9 @@ DOD_PKI_ZIP_URL = os.environ.get(
     "https://dl.dod.cyber.mil/wp-content/uploads/pki-pke/zip/unclass-certificates_pkcs7_DoD.zip",
 )
 
-FCPCA_G2_URL = "http://repo.fpki.gov/fcpca/fcpcag2.crt"
-FBCA_G4_ISSUED_TO_URL = "http://repo.fpki.gov/bridge/caCertsIssuedTofbcag4.p7c"
-FBCA_G4_ISSUED_BY_URL = "http://repo.fpki.gov/bridge/caCertsIssuedByfbcag4.p7c"
+FCPCA_G2_URL = "https://repo.fpki.gov/fcpca/fcpcag2.crt"
+FBCA_G4_ISSUED_TO_URL = "https://repo.fpki.gov/bridge/caCertsIssuedTofbcag4.p7c"
+FBCA_G4_ISSUED_BY_URL = "https://repo.fpki.gov/bridge/caCertsIssuedByfbcag4.p7c"
 
 USER_AGENT = "federal-pki/0.1"
 
