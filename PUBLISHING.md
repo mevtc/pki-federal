@@ -86,6 +86,7 @@ When an external contributor opens a PR on GitHub:
 | `.gitlab-ci.yml`   | Present            | Absent                    |
 | `.github/workflows/ci.yml` | Present   | Present                   |
 | `PUBLISHING.md`    | Present            | Absent                    |
+| `SECURITY_TODO.md` | Present            | Absent                    |
 
 ## Publishing to PyPI
 
