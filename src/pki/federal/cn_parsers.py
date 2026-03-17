@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pki_core.identity import CertIdentity
+    from pki.core.identity import CertIdentity
 
 
 def _parse_cac_dot(identity: CertIdentity) -> None:

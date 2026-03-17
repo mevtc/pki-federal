@@ -1,10 +1,10 @@
-"""Tests for federal_pki.certificate module."""
+"""Tests for pki.core.certificate module (run against pki-core dependency)."""
 
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.x509.oid import NameOID
 
-from federal_pki.certificate import (
+from pki.core.certificate import (
     CertificateError,
     cert_fingerprint,
     cert_to_pem,

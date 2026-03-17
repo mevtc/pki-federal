@@ -16,14 +16,8 @@ from cryptography.hazmat.primitives.serialization.pkcs7 import (
     load_pem_pkcs7_certificates,
 )
 from cryptography.x509 import load_der_x509_certificate
-from pki_core.trust_store import (  # noqa: F401
-    MAX_DOWNLOAD_BYTES,
-    USER_AGENT,
-    build_ca_bundle_for_providers,
-    download,
-    fetch_trust_store_source,
-    merge_and_deduplicate,
-)
+
+from pki.core.trust_store import download, merge_and_deduplicate
 
 logger = logging.getLogger(__name__)
 

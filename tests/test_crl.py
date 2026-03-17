@@ -1,16 +1,16 @@
-"""Tests for federal_pki.crl module."""
+"""Tests for CRL functionality (pki.core.crl + pki.federal.crl.CRLConfig)."""
 
 import pytest
 
-from federal_pki.certificate import CertificateError
-from federal_pki.crl import (
-    CRLConfig,
+from pki.core.certificate import CertificateError
+from pki.core.crl import (
     get_crl_distribution_points,
     get_crl_max_age,
     load_ca_certs_from_pem,
     parse_crl_bytes,
     verify_crl,
 )
+from pki.federal.crl import CRLConfig
 
 
 class TestGetCrlDistributionPoints:

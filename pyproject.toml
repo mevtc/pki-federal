@@ -2,9 +2,15 @@
 requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
 [project]
-name = "federal-pki"
-version = "0.2.0"
+name = "pki-federal"
+version = "0.3.0"
 description = "DoD and Federal PKI certificate utilities: x509 parsing, CRL caching, PKCS7 trust store management, and CAC/PIV identity extraction."
 readme = "README.md"
 license = {text = "BSD-3-Clause"}
@@ -24,7 +30,7 @@ classifiers = [
     "Topic :: Security :: Cryptography",
 ]
 dependencies = [
-    "pki-core>=0.1.0",
+    "pki-core>=0.2.0",
     "cryptography>=44.0",
     "httpx>=0.27.0",
     "platformdirs>=4.0",
@@ -32,9 +38,9 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://oss.mevtc.com"
-Repository = "https://github.com/mevtc/federal-pki"
-Issues = "https://github.com/mevtc/federal-pki/issues"
-Changelog = "https://github.com/mevtc/federal-pki/blob/main/CHANGELOG.md"
+Repository = "https://github.com/mevtc/pki-federal"
+Issues = "https://github.com/mevtc/pki-federal/issues"
+Changelog = "https://github.com/mevtc/pki-federal/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
@@ -68,7 +74,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["federal_pki"]
+known-first-party = ["pki"]
 
 [tool.ruff.format]
 quote-style = "double"

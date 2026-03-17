@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pki_core.providers import (
+from pki.core.providers import (
     AuthProvider,
     HeuristicRule,
     ProviderRegistry,
     TrustStoreSource,
 )
-from pki_core.selectors import select_edipi_first, select_email_first, select_uuid_first
+from pki.core.selectors import select_edipi_first, select_email_first, select_uuid_first
 
 from .cn_parsers import _parse_cac_dot, _parse_eca_human, _parse_piv_flexible
 from .oids import DOD_AUTH_OIDS, ECA_AUTH_OIDS, FPKI_PIV_AUTH_OIDS

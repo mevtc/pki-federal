@@ -1,14 +1,14 @@
-# Contributing to federal-pki
+# Contributing to pki-federal
 
-Thank you for your interest in contributing to federal-pki. This project is maintained by MeV Technology Consulting, LLC and we welcome contributions from the community.
+Thank you for your interest in contributing to pki-federal. This project is maintained by MeV Technology Consulting, LLC and we welcome contributions from the community.
 
 ## Getting Started
 
 1. Fork the repository on GitHub
 2. Clone your fork locally:
    ```bash
-   git clone git@github.com:YOUR-USERNAME/federal-pki.git
-   cd federal-pki
+   git clone git@github.com:YOUR-USERNAME/pki-federal.git
+   cd pki-federal
    ```
 3. Create a virtual environment and install dev dependencies:
    ```bash
@@ -36,7 +36,7 @@ This project uses [ruff](https://docs.astral.sh/ruff/) for linting and formattin
 ```bash
 ruff check .
 ruff format .
-mypy federal_pki/
+mypy src/pki/federal/
 ```
 
 Pre-commit hooks will run these automatically on each commit.
@@ -44,7 +44,7 @@ Pre-commit hooks will run these automatically on each commit.
 ### Security Scanning
 
 ```bash
-bandit -r federal_pki/
+bandit -r src/pki/federal/
 pip-audit
 ```
 

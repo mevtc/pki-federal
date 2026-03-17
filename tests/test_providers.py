@@ -1,9 +1,8 @@
-"""Tests for federal_pki.providers module."""
+"""Tests for pki.federal.providers module."""
 
-from pki_core.selectors import select_edipi_first, select_email_first, select_uuid_first
-
-from federal_pki.cn_parsers import _parse_cac_dot, _parse_eca_human, _parse_piv_flexible
-from federal_pki.providers import (
+from pki.core.selectors import select_edipi_first, select_email_first, select_uuid_first
+from pki.federal.cn_parsers import _parse_cac_dot, _parse_eca_human, _parse_piv_flexible
+from pki.federal.providers import (
     BUILTIN_PROVIDERS,
     CAC_PROVIDER,
     ECA_PROVIDER,

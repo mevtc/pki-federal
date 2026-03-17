@@ -1,11 +1,11 @@
-"""Tests for federal_pki.cn_parsers module."""
+"""Tests for pki.federal.cn_parsers module."""
 
-from federal_pki.cn_parsers import (
+from pki.core.identity import CertIdentity
+from pki.federal.cn_parsers import (
     _parse_cac_dot,
     _parse_eca_human,
     _parse_piv_flexible,
 )
-from federal_pki.identity import CertIdentity
 
 
 class TestParseCacDot:
