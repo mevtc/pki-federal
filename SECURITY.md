@@ -14,6 +14,7 @@ timelines, and disclosure policy, see
 | ------- | --------- |
 | 0.4.x   | Yes       |
 | 0.3.x   | Yes       |
+| 0.3.x   | Yes       |
 
 ## Security Testing
 
