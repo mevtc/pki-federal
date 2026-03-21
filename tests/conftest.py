@@ -7,6 +7,14 @@ from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
+from hypothesis import settings
+
+# Hypothesis profiles for CI — use via: pytest --hypothesis-profile=ci
+settings.register_profile("default", max_examples=500)
+settings.register_profile("ci", max_examples=2000)
+settings.register_profile("nightly", max_examples=10000)
+settings.register_profile("stress", max_examples=50000)
+settings.register_profile("insane", max_examples=200000)
 
 
 def _generate_key():

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-03-21
+
+### Added
+
+- `SP800_78_ALGORITHM_POLICY` — `AlgorithmPolicy` constant with NIST SP 800-78-5
+  approved algorithms (RSA 2048+, P-256/P-384, SHA-256+).
+- `SECURITY.md` with static analysis suppressions, fuzz testing documentation,
+  and link to centralized incident response at oss.mevtc.com.
+- Hypothesis fuzz tests for CN parsers, federal providers, and identity extraction.
+- CycloneDX SBOM generation in CI.
+
+### Changed
+
+- `CRLConfig` now provides meaningful federal defaults: `strict=True`,
+  `max_crl_bytes=20 MB` (DoD CRLs are large), `max_acceptable_age=64800`
+  (18 hours per FIPS 201-3 §2.9.1 revocation timeliness requirement).
+- Depends on `pki-core>=0.3.0` for `RevocationPolicy`, `AlgorithmPolicy`,
+  and chain validation.
+
 ## [0.3.0] - 2026-03-17
 
 ### Changed
