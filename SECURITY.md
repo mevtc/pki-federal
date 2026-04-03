@@ -13,8 +13,7 @@ timelines, and disclosure policy, see
 | Version | Supported |
 | ------- | --------- |
 | 0.4.x   | Yes       |
-| 0.3.x   | Yes       |
-| 0.3.x   | Yes       |
+| 0.3.x   | No        |
 
 ## Security Testing
 

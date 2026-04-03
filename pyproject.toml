@@ -10,7 +10,7 @@ where = ["src"]
 
 [project]
 name = "pki-federal"
-version = "0.4.0"
+version = "0.4.1"
 description = "DoD and Federal PKI certificate utilities: x509 parsing, CRL caching, PKCS7 trust store management, and CAC/PIV identity extraction."
 readme = "README.md"
 license = "BSD-3-Clause"
