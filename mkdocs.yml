@@ -1,0 +1,68 @@
+site_name: pki-federal
+site_description: DoD CAC, Federal PIV, and ECA provider pack for pki-core
+repo_url: https://github.com/mevtc/pki-federal
+repo_name: mevtc/pki-federal
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      check_paths: true
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            members_order: source
+            merge_init_into_class: true
+
+nav:
+  - Home: index.md
+  - Getting Started: quickstart.md
+  - API Reference:
+      - Overview: api/index.md
+      - Providers: api/providers.md
+      - Identity: api/identity.md
+      - CN Parsers: api/cn_parsers.md
+      - OIDs: api/oids.md
+      - CRL: api/crl.md
+      - Algorithms: api/algorithms.md
+      - Trust Store: api/trust_store.md
+      - Trust: api/trust.md
+  - Changelog: changelog.md

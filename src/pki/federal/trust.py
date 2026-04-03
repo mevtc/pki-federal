@@ -25,20 +25,24 @@ class TrustLevel(StrEnum):
     NONE = "none"  # Unauthenticated / unknown
 
     def __lt__(self, other):
+        """Compare trust levels by assurance ordering."""
         if not isinstance(other, TrustLevel):
             return NotImplemented
         order = [TrustLevel.NONE, TrustLevel.BASIC, TrustLevel.MEDIUM, TrustLevel.HIGH]
         return order.index(self) < order.index(other)
 
     def __le__(self, other):
+        """Return True if this trust level is equal or lower assurance."""
         return self == other or self < other
 
     def __gt__(self, other):
+        """Return True if this trust level is higher assurance."""
         if not isinstance(other, TrustLevel):
             return NotImplemented
         return not self <= other
 
     def __ge__(self, other):
+        """Return True if this trust level is equal or higher assurance."""
         return self == other or self > other
 
 
