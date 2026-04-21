@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.2] - 2026-04-21
+
+### Security
+
+- Bump `cryptography` minimum from `>=44.0` to `>=46.0.7` to resolve
+  CVE-2026-26007, CVE-2026-34073, and CVE-2026-39892.
+- Bump `pki-core` minimum from `>=0.3.0` to `>=0.3.4` for hardened zip
+  path traversal, OCSP signature verification, and cryptography CVE fixes.
+- Remove `DOD_PKI_URL` environment variable override from `trust_store.py`
+  to eliminate trust store poisoning vector.
+
+### Changed
+
+- **Breaking**: `TrustLevel` is now an `IntEnum` instead of `StrEnum`.
+  Comparisons work identically but values are integers (0-3) instead of
+  strings.  Code comparing with string literals (e.g., `== "high"`) must
+  be updated to use enum members (e.g., `== TrustLevel.HIGH`).
+- Refactor `trust_store.py` to delegate to `pki.core.trust_store` instead
+  of reimplementing ZIP parsing.  Public API (`fetch_dod_certs`,
+  `fetch_fpki_certs`, `build_ca_bundle`) is unchanged.
+- Extract shared `_parse_comma_format()` helper in `cn_parsers.py`.
+- Use per-module mypy overrides for `pki.core` instead of global relaxation.
+- Replace global Bandit B110 skip with targeted inline suppression.
+
+### Removed
+
+- Dead `CNParseStrategy` and `PrimaryIDStrategy` enums from `providers.py`.
+
 ## [0.4.1] - 2026-04-03
 
 ### Added
@@ -12,7 +40,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `TrustLevel` and `CredentialType` StrEnums for DoDI 8520.02 trust levels
   and federal PKI credential types.
 - Automated PyPI publishing via trusted publisher (OIDC) in release workflow.
-
 
 ## [0.4.0] - 2026-03-21
 

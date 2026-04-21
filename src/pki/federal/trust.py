@@ -7,43 +7,23 @@ is only permitted when PKI is "not technically feasible" and must
 be documented in the system authorization package (ATO).
 """
 
-from enum import StrEnum
+from enum import IntEnum, StrEnum
 
 
-class TrustLevel(StrEnum):
+class TrustLevel(IntEnum):
     """Authentication assurance level per DoDI 8520.02.
 
-    Ordered from highest to lowest assurance.  Supports comparison::
+    Ordered from lowest to highest assurance.  Supports comparison
+    natively via integer values::
 
         if user.trust_level < TrustLevel.HIGH:
             raise HTTPException(403, "Requires smartcard")
     """
 
-    HIGH = "high"  # Hardware PKI token (CAC/PIV smartcard)
-    MEDIUM = "medium"  # Software certificate or derived PIV credential
-    BASIC = "basic"  # Password-authenticated (fallback only)
-    NONE = "none"  # Unauthenticated / unknown
-
-    def __lt__(self, other):
-        """Compare trust levels by assurance ordering."""
-        if not isinstance(other, TrustLevel):
-            return NotImplemented
-        order = [TrustLevel.NONE, TrustLevel.BASIC, TrustLevel.MEDIUM, TrustLevel.HIGH]
-        return order.index(self) < order.index(other)
-
-    def __le__(self, other):
-        """Return True if this trust level is equal or lower assurance."""
-        return self == other or self < other
-
-    def __gt__(self, other):
-        """Return True if this trust level is higher assurance."""
-        if not isinstance(other, TrustLevel):
-            return NotImplemented
-        return not self <= other
-
-    def __ge__(self, other):
-        """Return True if this trust level is equal or higher assurance."""
-        return self == other or self > other
+    NONE = 0  # Unauthenticated / unknown
+    BASIC = 1  # Password-authenticated (fallback only)
+    MEDIUM = 2  # Software certificate or derived PIV credential
+    HIGH = 3  # Hardware PKI token (CAC/PIV smartcard)
 
 
 class CredentialType(StrEnum):

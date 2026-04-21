@@ -12,6 +12,21 @@ if TYPE_CHECKING:
     from pki.core.identity import CertIdentity
 
 
+def _parse_comma_format(identity: CertIdentity, cn: str) -> bool:
+    """Parse "LASTNAME, FIRSTNAME MIDDLE" comma-separated CN.
+
+    Returns True if the CN contained a comma and was handled.
+    """
+    if "," not in cn:
+        return False
+    parts = [p.strip() for p in cn.split(",", 1)]
+    identity.lastname = parts[0]
+    if len(parts) > 1:
+        first_parts = parts[1].split()
+        identity.firstname = first_parts[0] if first_parts else None
+    return True
+
+
 def _parse_cac_dot(identity: CertIdentity) -> None:
     """Parse CAC-format CN: LASTNAME.FIRSTNAME.MI.EDIPI."""
     if not identity.cn:
@@ -36,13 +51,7 @@ def _parse_piv_flexible(identity: CertIdentity) -> None:
 
     cn = identity.cn.strip()
 
-    # "LASTNAME, FIRSTNAME MIDDLE" format
-    if "," in cn:
-        parts = [p.strip() for p in cn.split(",", 1)]
-        identity.lastname = parts[0]
-        if len(parts) > 1:
-            first_parts = parts[1].split()
-            identity.firstname = first_parts[0] if first_parts else None
+    if _parse_comma_format(identity, cn):
         return
 
     # "LAST.FIRST.MI.NUMBER" — some PIV certs use CAC-like format
@@ -70,13 +79,7 @@ def _parse_eca_human(identity: CertIdentity) -> None:
 
     cn = identity.cn.strip()
 
-    # "LASTNAME, FIRSTNAME MIDDLE" format (some ECA vendors)
-    if "," in cn:
-        parts = [p.strip() for p in cn.split(",", 1)]
-        identity.lastname = parts[0]
-        if len(parts) > 1:
-            first_parts = parts[1].split()
-            identity.firstname = first_parts[0] if first_parts else None
+    if _parse_comma_format(identity, cn):
         return
 
     # "Firstname [Middle] Lastname" — standard ECA format

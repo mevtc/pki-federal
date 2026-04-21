@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from enum import Enum
-
 from pki.core.providers import (
     AuthProvider,
     HeuristicRule,
@@ -15,24 +13,6 @@ from pki.core.selectors import select_edipi_first, select_email_first, select_uu
 from .cn_parsers import _parse_cac_dot, _parse_eca_human, _parse_piv_flexible
 from .oids import DOD_AUTH_OIDS, ECA_AUTH_OIDS, FPKI_PIV_AUTH_OIDS
 
-
-# Deprecated enums — kept for backward compatibility
-class CNParseStrategy(Enum):
-    """Deprecated: AuthProvider now uses cn_parser callable."""
-
-    CAC_DOT = "cac_dot"
-    PIV_FLEXIBLE = "piv_flexible"
-    ECA_HUMAN = "eca_human"
-
-
-class PrimaryIDStrategy(Enum):
-    """Deprecated: AuthProvider now uses primary_id_selector callable."""
-
-    EDIPI_FIRST = "edipi_first"
-    UUID_FIRST = "uuid_first"
-    EMAIL_FIRST = "email_first"
-
-
 CAC_PROVIDER = AuthProvider(
     name="CAC",
     display_name="DoD CAC",
@@ -41,6 +21,9 @@ CAC_PROVIDER = AuthProvider(
     primary_id_selector=select_edipi_first,
     heuristics=(
         HeuristicRule(field="org", pattern="department of defense"),
+        # Intentionally uppercase-only: DoD CAs issue CNs in uppercase per
+        # DISA PKI naming conventions.  Case sensitivity is a high-confidence
+        # signal that the certificate came from a real DoD CA.
         HeuristicRule(
             field="cn",
             pattern=r"^[A-Z]+\.[A-Z]+\.[A-Z]*\.\d{10}$",

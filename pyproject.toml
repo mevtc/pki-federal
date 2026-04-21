@@ -10,7 +10,7 @@ where = ["src"]
 
 [project]
 name = "pki-federal"
-version = "0.4.1"
+version = "0.4.2"
 description = "DoD and Federal PKI certificate utilities: x509 parsing, CRL caching, PKCS7 trust store management, and CAC/PIV identity extraction."
 readme = "README.md"
 license = "BSD-3-Clause"
@@ -20,7 +20,7 @@ authors = [
 ]
 keywords = ["pki", "x509", "cac", "piv", "dod", "federal", "certificate", "crl"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
 
     "Programming Language :: Python :: 3",
@@ -30,8 +30,8 @@ classifiers = [
     "Topic :: Security :: Cryptography",
 ]
 dependencies = [
-    "pki-core>=0.3.0",
-    "cryptography>=44.0",
+    "pki-core>=0.3.4",
+    "cryptography>=46.0.7",
     "httpx>=0.27.0",
     "platformdirs>=4.0",
 ]
@@ -61,7 +61,7 @@ source = ["pki.federal"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 0
+fail_under = 95
 
 [tool.ruff]
 target-version = "py311"
@@ -90,12 +90,24 @@ quote-style = "double"
 
 [tool.mypy]
 python_version = "3.11"
-warn_return_any = false
 warn_unused_configs = true
-disallow_untyped_defs = false
+disallow_untyped_defs = true
 check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "pki.core.*"
+ignore_missing_imports = true
+warn_return_any = false
+
+[[tool.mypy.overrides]]
+module = "pki.federal.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["tests.*", "pytest"]
+disallow_untyped_defs = false
 ignore_missing_imports = true
 
 [tool.bandit]
 exclude_dirs = ["tests"]
-skips = ["B101", "B110"]
+skips = ["B101"]
