@@ -3,6 +3,7 @@
 from pki.core.identity import CertIdentity
 from pki.federal.cn_parsers import (
     _parse_cac_dot,
+    _parse_device_cn,
     _parse_eca_human,
     _parse_piv_flexible,
 )
@@ -92,4 +93,35 @@ class TestParseEcaHuman:
     def test_none_cn(self):
         identity = CertIdentity(cn=None)
         _parse_eca_human(identity)
+        assert identity.lastname is None
+
+
+class TestParseDeviceCn:
+    def test_fqdn_cn_not_mis_split(self):
+        """A device FQDN CN must not be parsed as a person's name."""
+        identity = CertIdentity(cn="athocalerts.com", organization="ATHOC INC.")
+        _parse_device_cn(identity)
+        assert identity.firstname is None
+        assert identity.lastname is None
+        # cn / organization are left as the caller populated them.
+        assert identity.cn == "athocalerts.com"
+        assert identity.organization == "ATHOC INC."
+
+    def test_service_name_cn(self):
+        identity = CertIdentity(cn="mail-relay-01.example.mil")
+        _parse_device_cn(identity)
+        assert identity.firstname is None
+        assert identity.lastname is None
+
+    def test_clears_any_preexisting_name(self):
+        """Even if names were somehow set, the device parser clears them."""
+        identity = CertIdentity(cn="host.example.com", firstname="host", lastname="example")
+        _parse_device_cn(identity)
+        assert identity.firstname is None
+        assert identity.lastname is None
+
+    def test_none_cn(self):
+        identity = CertIdentity(cn=None)
+        _parse_device_cn(identity)
+        assert identity.firstname is None
         assert identity.lastname is None

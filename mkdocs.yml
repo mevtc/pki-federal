@@ -65,4 +65,5 @@ nav:
       - Algorithms: api/algorithms.md
       - Trust Store: api/trust_store.md
       - Trust: api/trust.md
+  - CP Policy Table: cp-policy-table.md
   - Changelog: changelog.md

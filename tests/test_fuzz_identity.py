@@ -185,6 +185,7 @@ class TestParseIdentityInvariants:
         expected_keys = {
             "primary_id",
             "credential_type",
+            "intended_use",
             "cn",
             "firstname",
             "lastname",

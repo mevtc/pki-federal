@@ -168,6 +168,39 @@ def eca_cert(ca_key, ca_cert, signer_key):
 
 
 @pytest.fixture(scope="session")
+def eca_device_cert(ca_key, ca_cert, signer_key):
+    """End-entity cert mimicking the WidePoint/ORC AtHoc emergency-alert cert.
+
+    Subject CN is an FQDN (a device/service), asserting the ECA
+    id-eca-medium-device-sha256 policy (2.16.840.1.101.3.2.1.12.9).
+    """
+    subject = x509.Name(
+        [
+            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "ATHOC INC."),
+            x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, "ECA"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "athocalerts.com"),
+        ]
+    )
+    device_policy = x509.PolicyInformation(x509.ObjectIdentifier("2.16.840.1.101.3.2.1.12.9"), None)
+    return (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(ca_cert.subject)
+        .public_key(signer_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(datetime.datetime(2024, 1, 1, tzinfo=datetime.UTC))
+        .not_valid_after(datetime.datetime(2030, 1, 1, tzinfo=datetime.UTC))
+        .add_extension(x509.CertificatePolicies([device_policy]), critical=False)
+        .add_extension(
+            x509.SubjectAlternativeName([x509.DNSName("athocalerts.com")]),
+            critical=False,
+        )
+        .sign(ca_key, hashes.SHA256())
+    )
+
+
+@pytest.fixture(scope="session")
 def bad_uuid_cert(ca_key, ca_cert, signer_key):
     """Certificate with a malformed UUID in SAN."""
     subject = x509.Name(

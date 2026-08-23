@@ -10,9 +10,15 @@ repos:
     rev: v1.14.1
     hooks:
       - id: mypy
+        # This hook builds its own isolated env, so anything imported by the
+        # files it checks must be listed here — it does not see the project
+        # venv. The list must track pyproject's runtime deps plus whatever the
+        # test modules import, or mypy reports import-not-found for code that
+        # type-checks fine locally.
         additional_dependencies:
-          - pki-core>=0.3.0
+          - pki-core>=0.6.0
           - cryptography>=44.0
           - httpx>=0.27.0
           - platformdirs>=4.0
+          - hypothesis>=6.100  # imported by tests/conftest.py and the fuzz tests
         args: [--config-file=pyproject.toml]

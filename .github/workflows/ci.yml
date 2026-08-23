@@ -14,7 +14,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install ruff
+      # Pinned deliberately. Unpinned, a ruff release changes the result of CI
+      # on unchanged code — 0.16 began formatting Python inside Markdown and
+      # broke this job with no commit behind it. Bump this on purpose.
+      - run: pip install ruff==0.16.3
       - run: ruff check .
       - run: ruff format --check .
 
@@ -25,7 +28,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install git+https://github.com/mevtc/pki-core.git@main
       - run: pip install -e ".[dev]"
       - run: mypy src/pki/federal
 
@@ -36,7 +38,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install git+https://github.com/mevtc/pki-core.git@main
+      # pip-audit audits the whole environment, including the venv bootstrap.
+      # The runner's stock pip/setuptools carry their own advisories, which
+      # fail this job for vulnerabilities in build tooling that pki-federal
+      # neither ships nor imports. Upgrade them rather than suppress the
+      # findings, so the gate keeps reporting real ones.
+      - run: pip install --upgrade pip setuptools
       - run: pip install -e ".[dev]" bandit pip-audit cyclonedx-bom
       - run: bandit -r src/pki/federal -c pyproject.toml --severity-level high
       - run: pip-audit
@@ -56,7 +63,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install git+https://github.com/mevtc/pki-core.git@main
       - run: pip install -e ".[dev]"
       - run: pytest --tb=short --ignore=tests/test_fuzz_cn_parsers.py
 
@@ -67,6 +73,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: pip install git+https://github.com/mevtc/pki-core.git@main
       - run: pip install -e ".[dev]"
       - run: pytest tests/test_fuzz_cn_parsers.py --hypothesis-profile=ci -v

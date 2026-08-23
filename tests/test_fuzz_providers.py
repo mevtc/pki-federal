@@ -12,7 +12,7 @@ to increase coverage.
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from pki.federal.oids import DOD_AUTH_OIDS, ECA_AUTH_OIDS, FPKI_PIV_AUTH_OIDS
+from pki.federal.oids import DOD_PE_OIDS, ECA_PE_OIDS, FEDERAL_PE_OIDS
 from pki.federal.providers import (
     BUILTIN_PROVIDERS,
     CAC_PROVIDER,
@@ -52,7 +52,7 @@ class TestFuzzMatchOids:
         """match_oids should return a provider or None, never raise."""
         reg = default_registry()
         result = reg.match_oids(oid_set)
-        assert result is None or result.name in {"CAC", "PIV", "ECA"}
+        assert result is None or result.name in set(BUILTIN_PROVIDERS)
 
     @given(oid_set=random_oid_set)
     @settings(suppress_health_check=[HealthCheck.too_slow])
@@ -60,9 +60,9 @@ class TestFuzzMatchOids:
         """match_oids should return a provider or None, never raise."""
         reg = full_registry()
         result = reg.match_oids(oid_set)
-        assert result is None or result.name in {"CAC", "PIV", "ECA"}
+        assert result is None or result.name in set(BUILTIN_PROVIDERS)
 
-    @given(subset=st.frozensets(st.sampled_from(sorted(DOD_AUTH_OIDS)), min_size=1))
+    @given(subset=st.frozensets(st.sampled_from(sorted(DOD_PE_OIDS)), min_size=1))
     def test_dod_oids_always_match_cac(self, subset):
         """Any non-empty subset of DoD auth OIDs must match CAC."""
         reg = full_registry()
@@ -70,7 +70,7 @@ class TestFuzzMatchOids:
         assert result is not None
         assert result.name == "CAC"
 
-    @given(subset=st.frozensets(st.sampled_from(sorted(FPKI_PIV_AUTH_OIDS)), min_size=1))
+    @given(subset=st.frozensets(st.sampled_from(sorted(FEDERAL_PE_OIDS)), min_size=1))
     def test_fpki_oids_always_match_piv(self, subset):
         """Any non-empty subset of FPKI PIV auth OIDs must match PIV."""
         reg = full_registry()
@@ -78,7 +78,7 @@ class TestFuzzMatchOids:
         assert result is not None
         assert result.name == "PIV"
 
-    @given(subset=st.frozensets(st.sampled_from(sorted(ECA_AUTH_OIDS)), min_size=1))
+    @given(subset=st.frozensets(st.sampled_from(sorted(ECA_PE_OIDS)), min_size=1))
     def test_eca_oids_always_match_eca(self, subset):
         """Any non-empty subset of ECA auth OIDs must match ECA."""
         reg = full_registry()
@@ -113,7 +113,7 @@ class TestFuzzMatchHeuristic:
         """match_heuristic should return a provider or None, never raise."""
         reg = full_registry()
         result = reg.match_heuristic(cn, org, ou)
-        assert result is None or result.name in {"CAC", "PIV", "ECA"}
+        assert result is None or result.name in set(BUILTIN_PROVIDERS)
 
     @given(
         org=st.from_regex(r".*[Dd]epartment of [Dd]efense.*", fullmatch=True).filter(

@@ -91,7 +91,26 @@ def _parse_eca_human(identity: CertIdentity) -> None:
         identity.lastname = cn
 
 
+def _parse_device_cn(identity: CertIdentity) -> None:
+    """Parse an NPE / device / service CN (e.g. an FQDN like ``athocalerts.com``).
+
+    A device certificate's Subject CN is a machine identity — a hostname,
+    FQDN, or service/application name — not a personal name.  The human-name
+    parsers above would mis-split such a CN into ``lastname``/``firstname``
+    (e.g. treating ``athocalerts.com`` as surname ``athocalerts`` / given name
+    ``com``).  This parser deliberately performs no personal-name extraction:
+    it leaves ``firstname`` and ``lastname`` as ``None`` and relies on the
+    fields ``parse_identity()`` has already populated from the certificate
+    subject (``cn``, ``organization``, ``ou``).  The device's stable primary
+    identifier is derived from the CN by ``select_cn_first``.
+    """
+    # Explicitly assert the machine-identity contract: no person-name fields.
+    identity.firstname = None
+    identity.lastname = None
+
+
 # Public aliases
 parse_cac_dot = _parse_cac_dot
 parse_piv_flexible = _parse_piv_flexible
 parse_eca_human = _parse_eca_human
+parse_device_cn = _parse_device_cn

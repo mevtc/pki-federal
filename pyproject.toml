@@ -10,7 +10,7 @@ where = ["src"]
 
 [project]
 name = "pki-federal"
-version = "0.4.2"
+version = "0.6.0"
 description = "DoD and Federal PKI certificate utilities: x509 parsing, CRL caching, PKCS7 trust store management, and CAC/PIV identity extraction."
 readme = "README.md"
 license = "BSD-3-Clause"
@@ -30,7 +30,7 @@ classifiers = [
     "Topic :: Security :: Cryptography",
 ]
 dependencies = [
-    "pki-core>=0.3.4",
+    "pki-core>=0.6.0",
     "cryptography>=46.0.7",
     "httpx>=0.27.0",
     "platformdirs>=4.0",
@@ -87,6 +87,12 @@ known-first-party = ["pki"]
 
 [tool.ruff.format]
 quote-style = "double"
+# Ruff 0.16 began formatting Python code blocks inside Markdown, which turned a
+# tooling upgrade into a CI failure on unchanged prose. The formatter is
+# authoritative for source, not documentation. Note this leaves Markdown
+# examples unchecked entirely — `ruff check` reports "No Python files found"
+# for .md — so code in the docs is verified by review, not tooling.
+exclude = ["*.md"]
 
 [tool.mypy]
 python_version = "3.11"
